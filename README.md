@@ -288,34 +288,5 @@ tests/test_workspaces.py::test_add_and_update_workspace_member PASSED    [100%]
 
 ---
 
-## 🎯 Interview Talking Points & Technical Deep-Dive
-
-When interviewers ask about your project, here are the exact architectural decisions and concepts to discuss:
-
-### 1. Why Layered Architecture (Routers -> Services -> Repositories)?
-- **Routers**: Only handle HTTP protocol concerns (headers, status codes, query parameters, deserialization).
-- **Services**: Contain pure business logic (e.g., verifying user permissions, triggering notifications, calculating metrics).
-- **Repositories**: Encapsulate database interactions and complex queries. If you ever switch database systems or query strategies, the business layer remains completely unchanged and unit-testable without mocking HTTP.
-
-### 2. Why Async SQLAlchemy 2.0 over Sync ORMs?
-- FastAPI is an asynchronous ASGI framework. Using a synchronous ORM (like standard Django ORM or traditional SQLAlchemy) causes database I/O calls to block the Python `asyncio` event loop, degrading throughput from thousands of requests/sec to dozens.
-- SQLAlchemy 2.0 async engine (`aiosqlite` / `asyncpg`) yields execution back to the event loop while waiting for database queries to return, achieving high concurrency.
-
-### 3. How is RBAC (Role-Based Access Control) enforced?
-- Workspace permissions are verified before performing sensitive actions.
-- The `WorkspaceService.check_membership` method verifies that the user is an active member and holds one of the `allowed_roles` (`OWNER`, `ADMIN`, `MEMBER`, `VIEWER`).
-- Crucial safeguards are built-in: Only the `OWNER` can delete a workspace or transfer ownership, and `ADMIN`s cannot alter or remove other `ADMIN`s or `OWNER`s.
-
-### 4. How does Authentication & JWT Token Refresh work?
-- **Access Tokens** are short-lived (e.g., 24 hours) and contain the user's ID (`sub`) and minimal claims.
-- **Refresh Tokens** are longer-lived (e.g., 7 days) and are restricted solely to the `/auth/refresh` endpoint.
-- If an access token expires, the client exchanges its refresh token without requiring the user to re-enter their password.
-
-### 5. How are Errors and Exceptions Handled?
-- All domain exceptions inherit from a custom `AppException`.
-- A centralized exception handler formats all errors (domain exceptions, Pydantic validation errors, 404s, and 500s) into an RFC-compliant JSON response with a timestamp, path, error code, and error details.
-
----
-
 ## 📄 License
 This project is open-source and available under the [MIT License](LICENSE).
